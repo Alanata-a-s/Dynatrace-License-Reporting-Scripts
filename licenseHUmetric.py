@@ -9,7 +9,15 @@ from dynatrace.metric.utils import (
 )
 dtApiToken=os.environ.get("DT_APITOKEN")
 dtEnvironment=os.environ.get("DT_ENVIRONMENT")
+dtCertVerify=os.environ.get("DT_CERTVERIFY")
 certVerify=True
+if dtCertVerify is not None:
+    if dtCertVerify.lower()=="false":
+        certVerify=False
+    elif dtCertVerify.lower()=="true":
+        certVerify=True
+    else:
+        certVerify=dtCertVerify
 
 factory = DynatraceMetricsFactory()
 serializer = DynatraceMetricsSerializer(metric_key_prefix="billing",enrich_with_dynatrace_metadata=False)
@@ -55,7 +63,8 @@ while (firstQuery or pageKey is not None):
 # Post metric data
 chunkSize = 500
 for i in range(0,len(consumptionMetrics), chunkSize):    
-    print("\n".join(consumptionMetrics[i:i+chunkSize]))
+    # Uncomment to print metric lines
+    # print("\n".join(consumptionMetrics[i:i+chunkSize]))
     metricResponse = requests.post(f"{dtEnvironment}/api/v2/metrics/ingest", data="\n".join(consumptionMetrics[i:i+chunkSize]), headers={"Authorization": f"api-token {dtApiToken}"}, verify=certVerify)
     if metricResponse.status_code!=202 or metricResponse.json()["linesInvalid"]>0:
         print(metricResponse.status_code)
