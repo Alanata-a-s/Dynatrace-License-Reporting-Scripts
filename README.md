@@ -29,8 +29,8 @@ API token with following scopes must be created:
 - `DT_UNMONITORED_EVENTS` - Determines if events about unmonitored hosts which should be monitored will be sent (defaults to True)
 - `DT_UNMONITORED_EVENT_TITLE` - (optional) Event title for unmonitored host
 - `DT_UNMONITORED_EVENT_SEVERITY` - (optional) Event severity for unmonitored host, defaults to AVAILABLITY_EVENT
-- `DT_UNMONITORED_EVENT_TIMEOUT` - (optional) Event timeout in seconds for unmonitored host, defaults to 3600
-
+- `DT_UNMONITORED_EVENT_TIMEOUT` - (optional) Event timeout in seconds for unmonitored host, defaults to 7200
+- `DT_UNMONITORED_EVENT_RELATIVETIME` - (optional) Relative time to fetch data about unmonitored hosts back, defaults to **3days**, possible values min, 5mins, 10mins, 15mins, 30mins, hour, 2hours, 6hours, day, 3days, month, week
 
 3. Use cron for executing the script on hourly basis
 

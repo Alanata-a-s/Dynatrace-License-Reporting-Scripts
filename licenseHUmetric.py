@@ -30,12 +30,12 @@ else:
     dtUnmonitoredEvents = False
 dtUnmonitoredEventTitle=os.environ.get("DT_UNMONITORED_EVENT_TITLE","Host is unmonitored")
 dtUnmonitoredEventSeverity=os.environ.get("DT_UNMONITORED_EVENT_SEVERITY", "AVAILABLITY_EVENT")
-dtUnmonitoredEventTimeout=os.environ.get("DT_UNMONITORED_EVENT_TIMEOUT", "3600")
+dtUnmonitoredEventTimeout=os.environ.get("DT_UNMONITORED_EVENT_TIMEOUT", "7200")
+dtUnmonitoredEventRelativeTime=os.environ.get("DT_UNMONITORED_RELATIVETIME", "3days")
 
 factory = DynatraceMetricsFactory()
 serializer = DynatraceMetricsSerializer(metric_key_prefix="billing",enrich_with_dynatrace_metadata=False)
 consumptionMetrics=[]
-disabledHosts=[]
 
 # Query metric data
 firstQuery = True
@@ -53,13 +53,6 @@ while (firstQuery or pageKey is not None):
         jr = response.json()
         pageKey = jr["nextPageKey"]
         for host in jr["hosts"]:
-            # Find disabled hosts
-            try:
-                if host['availabilityState']=="UNMONITORED":
-                    disabledHosts.append(host['hostInfo']['entityId'])
-            except KeyError:
-                pass
-
             # Provide HU consumption metric value
             dimensions = {}
             try:
@@ -94,31 +87,50 @@ for i in range(0, len(consumptionMetrics), chunkSize):
             print(metricResponse.status_code)
             print(metricResponse.text)    
 
+
 if (dtUnmonitoredEvents):
     # Check disabled hosts to validate if disabled intentionally and send events
-    for host in disabledHosts:
-        response = requests.get(f"{dtEnvironment}/api/v2/settings/effectiveValues", params={
-                                "schemaIds": "builtin:host.monitoring", "scope": host}, 
-                                headers={"Authorization": f"api-token {dtApiToken}"}, verify=certVerify)
-        if response.status_code == 200:
-            for hostMonitoringConfig in response.json()["items"]:
-                if hostMonitoringConfig['value']['enabled']:
-                    event = {
-                        "eventType": dtUnmonitoredEventSeverity,
-                        "title": dtUnmonitoredEventTitle,
-                        "timeout": dtUnmonitoredEventTimeout,
-                        "entitySelector": f"type(HOST),entityId({host})",
-                        "properties": {
-                            "Actual monitoring state": "UNMONITORED",
-                            "Desired monitoring state": "enabled",
-                            "Desired fullstack mode": hostMonitoringConfig['value']['fullStack'],
-                            "Desired autoinjection mode": hostMonitoringConfig['value']['autoInjection']
-                        }
-                    }
-                    if (dtDryRun):
-                        print(f"Will send event {event}")
-                    else:
-                        response = requests.post(f"{dtEnvironment}/api/v2/events/ingest", json=event, 
-                                headers={"Authorization": f"api-token {dtApiToken}"}, verify=certVerify)
-                        if response.status_code!=201:
-                            print(f"Error while sending event for {host}, {response}")                
+    # Query the UNMONIORED_DISABLED hosts
+    firstQuery = True
+    pageKey = None
+    while (firstQuery or pageKey is not None):
+        firstQuery = False
+        params = {
+            "includeDetails": "false",
+            "availabilityState": "UNMONITORED",
+            "detailedAvailabilityState": "UNMONITORED_DISABLED",
+            "relativeTime": dtUnmonitoredEventRelativeTime
+        }
+        if pageKey is not None:
+            params["nextPageKey"]=pageKey
+        response = requests.get(f"{dtEnvironment}/api/v1/oneagents", params, headers={"Authorization": f"api-token {dtApiToken}"}, verify=certVerify)
+        if response.status_code==200:
+            jr = response.json()
+            pageKey = jr["nextPageKey"]
+            for host in jr["hosts"]:                
+                # Get effective value for this host from settings - if the host is enabled
+                response = requests.get(f"{dtEnvironment}/api/v2/settings/effectiveValues", params={
+                                        "schemaIds": "builtin:host.monitoring", "scope": host["hostInfo"]["entityId"]}, 
+                                        headers={"Authorization": f"api-token {dtApiToken}"}, verify=certVerify)
+                if response.status_code == 200:
+                    for hostMonitoringConfig in response.json()["items"]:
+                        if hostMonitoringConfig['value']['enabled']:
+                            event = {
+                                "eventType": dtUnmonitoredEventSeverity,
+                                "title": dtUnmonitoredEventTitle,
+                                "timeout": dtUnmonitoredEventTimeout,
+                                "entitySelector": f"type(HOST),entityId({host['hostInfo']['entityId']})",
+                                "properties": {
+                                    "Monitoring state actual": "DISABLED",
+                                    "Monitoring state configured": "ENABLED",
+                                    "Desired fullstack mode": hostMonitoringConfig['value']['fullStack'],
+                                    "Desired autoinjection mode": hostMonitoringConfig['value']['autoInjection']
+                                }
+                            }
+                            if (dtDryRun):
+                                print(f"Will send event {event}")
+                            else:
+                                response = requests.post(f"{dtEnvironment}/api/v2/events/ingest", json=event, 
+                                        headers={"Authorization": f"api-token {dtApiToken}"}, verify=certVerify)
+                                if response.status_code!=201:
+                                    print(f"Error while sending event for {host}, {response}")                
