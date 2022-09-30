@@ -1,4 +1,5 @@
 import os
+import json
 import requests
 from pprint import pprint
 from dynatrace.metric.utils import (
@@ -145,24 +146,24 @@ if (dtUnmonitoredEvents):
                                 event = {
                                     "eventType": dtUnmonitoredEventSeverity,
                                     "title": dtUnmonitoredEventTitle,
-                                    "description": "",
+                                    "description": dtUnmonitoredEventTitle,
                                     "timeout": dtUnmonitoredEventTimeout,
                                     "attachRules": {
                                         "entityIds": [ f"{host['hostInfo']['entityId']}" ]
                                     },
                                     "source": "Host Unit monitoring script",
-                                    "properties": {
+                                    "customProperties": {
                                         "Monitoring state actual": "DISABLED",
                                         "Monitoring state configured": "ENABLED",
-                                        "Desired fullstack mode": hostMonitoringConfig['value']['fullStack'],
-                                        "Desired autoinjection mode": hostMonitoringConfig['value']['autoInjection']
+                                        "Desired fullstack mode": f"{hostMonitoringConfig['value']['fullStack']}",
+                                        "Desired autoinjection mode": f"{hostMonitoringConfig['value']['autoInjection']}"
                                     }
                                 }
                                 if (dtDryRun):
                                     print(f"Will send event using APIv1 {event}")
                                 else:
-                                    response = requests.post(f"{dtEnvironment}/api/v2/events/ingest", json=event, 
+                                    response = requests.post(f"{dtEnvironment}/api/v1/events", json=event, 
                                             headers={"Authorization": f"api-token {dtApiToken}"}, verify=certVerify)
-                                    if response.status_code!=201:
+                                    if response.status_code!=200:
                                         print(f"Error while sending event for {host}, {response}")                
 
