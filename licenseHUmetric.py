@@ -130,8 +130,8 @@ if (dtUnmonitoredEvents):
                                     "properties": {
                                         "Monitoring state actual": "DISABLED",
                                         "Monitoring state configured": "ENABLED",
-                                        "Desired fullstack mode": hostMonitoringConfig['value']['fullStack'],
-                                        "Desired autoinjection mode": hostMonitoringConfig['value']['autoInjection']
+                                        "Fullstack mode": hostMonitoringConfig['value']['fullStack'],
+                                        "Autoinjection mode": hostMonitoringConfig['value']['autoInjection']
                                     }
                                 }
                                 if (dtDryRun):
@@ -143,11 +143,15 @@ if (dtUnmonitoredEvents):
                                         print(f"Error while sending event for {host}, {response}")                
                             else:
                                 # Send event using legacy ApiV1
+                                try:
+                                    timeoutMinutes = abs(int(dtUnmonitoredEventTimeout)/60)
+                                except:
+                                    timeoutMinutes = 120
                                 event = {
                                     "eventType": dtUnmonitoredEventSeverity,
                                     "title": dtUnmonitoredEventTitle,
                                     "description": dtUnmonitoredEventTitle,
-                                    "timeout": dtUnmonitoredEventTimeout,
+                                    "timeoutMinutes": timeoutMinutes,
                                     "attachRules": {
                                         "entityIds": [ f"{host['hostInfo']['entityId']}" ]
                                     },
@@ -155,8 +159,8 @@ if (dtUnmonitoredEvents):
                                     "customProperties": {
                                         "Monitoring state actual": "DISABLED",
                                         "Monitoring state configured": "ENABLED",
-                                        "Desired fullstack mode": f"{hostMonitoringConfig['value']['fullStack']}",
-                                        "Desired autoinjection mode": f"{hostMonitoringConfig['value']['autoInjection']}"
+                                        "Fullstack mode": f"{hostMonitoringConfig['value']['fullStack']}",
+                                        "Autoinjection mode": f"{hostMonitoringConfig['value']['autoInjection']}"
                                     }
                                 }
                                 if (dtDryRun):
