@@ -103,7 +103,7 @@ if (dtUnmonitoredEvents):
         params = {
             "includeDetails": "false",
             "availabilityState": "UNMONITORED",
-            "detailedAvailabilityState": "UNMONITORED_DISABLED",
+            "detailedAvailabilityState": "UNMONITORED_AGENT_DISABLED",
             "relativeTime": dtUnmonitoredEventRelativeTime
         }
         if pageKey is not None:
