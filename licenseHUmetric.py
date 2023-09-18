@@ -130,7 +130,6 @@ if (dtUnmonitoredEvents):
                                     "properties": {
                                         "Monitoring state actual": "DISABLED",
                                         "Monitoring state configured": "ENABLED",
-                                        "Fullstack mode": hostMonitoringConfig['value']['fullStack'],
                                         "Autoinjection mode": hostMonitoringConfig['value']['autoInjection']
                                     }
                                 }
@@ -159,7 +158,6 @@ if (dtUnmonitoredEvents):
                                     "customProperties": {
                                         "Monitoring state actual": "DISABLED",
                                         "Monitoring state configured": "ENABLED",
-                                        "Fullstack mode": f"{hostMonitoringConfig['value']['fullStack']}",
                                         "Autoinjection mode": f"{hostMonitoringConfig['value']['autoInjection']}"
                                     }
                                 }
